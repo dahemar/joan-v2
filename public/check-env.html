@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Env Check</title>
+  <script type="module">
+    // This will only work in dev mode with Vite
+    // In production, env vars are baked into the build
+    console.log('=== ENV CHECK ===');
+    console.log('VITE_GOOGLE_SHEETS_API_KEY:', import.meta.env.VITE_GOOGLE_SHEETS_API_KEY ? 'Present' : 'Missing');
+    console.log('VITE_GOOGLE_SHEETS_SHEET_ID:', import.meta.env.VITE_GOOGLE_SHEETS_SHEET_ID ? 'Present' : 'Missing');
+    console.log('MODE:', import.meta.env.MODE);
+    console.log('PROD:', import.meta.env.PROD);
+    
+    document.getElementById('result').innerHTML = `
+      <h2>Environment Variables Check</h2>
+      <p><strong>API_KEY:</strong> ${import.meta.env.VITE_GOOGLE_SHEETS_API_KEY ? '✅ Present' : '❌ Missing'}</p>
+      <p><strong>SHEET_ID:</strong> ${import.meta.env.VITE_GOOGLE_SHEETS_SHEET_ID ? '✅ Present' : '❌ Missing'}</p>
+      <p><strong>MODE:</strong> ${import.meta.env.MODE}</p>
+      <p><strong>PROD:</strong> ${import.meta.env.PROD}</p>
+    `;
+  </script>
+</head>
+<body>
+  <div id="result">Loading...</div>
+</body>
+</html>
