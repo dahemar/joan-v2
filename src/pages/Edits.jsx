@@ -11,9 +11,7 @@ export default function Edits() {
   console.log('🎨 Edits component rendered')
   const [active, setActive] = useState(null)
   const [sheetProjects, setSheetProjects] = useState(null)
-  
-  // FORCE LOCAL MODE: Ignore Google Sheets in production
-  const sheetsConfig = false // sheetsConfigured()
+  const sheetsConfig = sheetsConfigured()
   console.log('🎨 sheetsConfigured:', sheetsConfig)
   const [loading, setLoading] = useState(sheetsConfig)
   const [params, setParams] = useSearchParams()
@@ -54,14 +52,24 @@ export default function Edits() {
 
   if (sheetsConfigured() && loading) {
     return (
-      <div className="center-viewport">
-        <div className="grid">
-          {Array.from({ length: 9 }).map((_, i) => (
-            <div key={i} className="grid-item" style={{ opacity: 0.35 }}>
-              <div className="grid-thumb" style={{ width: '100%', paddingTop: '56.25%', background: '#f0f0f0' }} />
-              <div className="grid-caption">&nbsp;</div>
-            </div>
-          ))}
+      <div className="center-viewport" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+        <div style={{ textAlign: 'center', opacity: 0.6 }}>
+          <div style={{ 
+            width: '40px', 
+            height: '40px', 
+            border: '3px solid #f3f3f3',
+            borderTop: '3px solid #333',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            margin: '0 auto 16px'
+          }} />
+          <style>{`
+            @keyframes spin {
+              0% { transform: rotate(0deg); }
+              100% { transform: rotate(360deg); }
+            }
+          `}</style>
+          <p style={{ fontSize: '14px', margin: 0 }}>Loading...</p>
         </div>
       </div>
     )
