@@ -2,19 +2,33 @@ import { useEffect, useState } from 'react'
 import { loadContactFromSheets, sheetsConfigured } from '../data/loadFromSheets'
 
 export default function Contact() {
-  const [contact, setContact] = useState({ email: 'joan-cf@hotmail.com', instagram: '@joan47129540' })
+  const [contact, setContact] = useState(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     let cancelled = false
-    if (sheetsConfigured()) {
-      loadContactFromSheets().then((c) => { if (!cancelled && c) setContact((prev) => ({ ...prev, ...c })) }).catch(() => {})
+    async function load() {
+      setLoading(true)
+      if (sheetsConfigured()) {
+        try {
+          const c = await loadContactFromSheets()
+          if (!cancelled && c) setContact(c)
+        } catch (err) {
+          // ignore
+        }
+      }
+      if (!cancelled) setLoading(false)
     }
+    load()
     return () => { cancelled = true }
   }, [])
 
-  const email = contact.email || 'hello@example.com'
-  const instagram = contact.instagram || '@yourhandle'
-  const instagramUrl = instagram.startsWith('http') ? instagram : `https://instagram.com/${instagram.replace(/^@/, '')}`
+  if (loading) return null
+  if (!contact) return null
+
+  const email = contact.email
+  const instagram = contact.instagram
+  const instagramUrl = instagram && instagram.startsWith('http') ? instagram : `https://instagram.com/${(instagram||'').replace(/^@/, '')}`
 
   return (
     <div>
