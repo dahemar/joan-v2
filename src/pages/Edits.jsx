@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import VideoModal from '../components/VideoModal'
-import { editsProjects as loaded } from '../data/loadEdits'
-import { loadEditsFromSheets, sheetsConfigured } from '../data/loadFromSheets'
-import { edits as fallback } from '../data/videos'
+import { getCachedEditsProjects, loadEditsFromSheets, sheetsConfigured } from '../data/loadFromSheets'
 import VideoThumb from '../components/VideoThumb'
 import { EDIT_CATEGORIES } from '../data/categories'
 import { useSearchParams } from 'react-router-dom'
@@ -10,21 +8,14 @@ import { useSearchParams } from 'react-router-dom'
 export default function Edits() {
   if (import.meta.env.DEV) console.log('🎨 Edits component rendered')
   const [active, setActive] = useState(null)
-  const [sheetProjects, setSheetProjects] = useState(null)
+  const [sheetProjects, setSheetProjects] = useState(() => (sheetsConfigured() ? (getCachedEditsProjects() || []) : []))
   const sheetsConfig = sheetsConfigured()
   if (import.meta.env.DEV) console.log('🎨 sheetsConfigured:', sheetsConfig)
-  const [loading, setLoading] = useState(sheetsConfig)
+  const [loading, setLoading] = useState(false)
   const [params, setParams] = useSearchParams()
   const filter = params.get('f') || 'all'
   const projects = useMemo(() => {
-    // Prioritize Google Sheets if configured and loaded
-    if (sheetsConfigured() && sheetProjects && sheetProjects.length > 0) {
-      return sheetProjects
-    }
-    // Fallback to local files or hardcoded data
-    return loaded && loaded.length
-      ? loaded
-      : fallback.map((e) => ({ id: e.id, title: e.title, poster: e.poster, items: [e], credits: e.credits }))
+    return sheetProjects || []
   }, [sheetProjects])
 
   // Load from Google Sheets if configured
@@ -32,6 +23,8 @@ export default function Edits() {
     let cancelled = false
     if (sheetsConfigured()) {
       if (import.meta.env.DEV) console.log('🔄 Edits: Starting Google Sheets fetch...')
+      // If we don't have cached projects, we may show an empty grid briefly.
+      // Avoid rendering a blocking "Loading..." state.
       loadEditsFromSheets()
         .then((projects) => { 
           if (import.meta.env.DEV) console.log('📦 Edits: Sheets response:', projects?.length || 0, 'projects')

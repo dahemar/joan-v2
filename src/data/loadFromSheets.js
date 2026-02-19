@@ -7,11 +7,53 @@ const API_KEY = import.meta.env.VITE_GOOGLE_SHEETS_API_KEY
 const SHEET_ID = import.meta.env.VITE_GOOGLE_SHEETS_SHEET_ID
 
 // Debug: Log all env vars on module load
-console.log('🔧 loadFromSheets.js loaded')
-console.log('🔧 import.meta.env.PROD:', import.meta.env.PROD)
-console.log('🔧 import.meta.env.MODE:', import.meta.env.MODE)
-console.log('🔧 API_KEY exists:', !!API_KEY)
-console.log('🔧 SHEET_ID exists:', !!SHEET_ID)
+if (import.meta.env.DEV) {
+  console.log('🔧 loadFromSheets.js loaded')
+  console.log('🔧 import.meta.env.PROD:', import.meta.env.PROD)
+  console.log('🔧 import.meta.env.MODE:', import.meta.env.MODE)
+  console.log('🔧 API_KEY exists:', !!API_KEY)
+  console.log('🔧 SHEET_ID exists:', !!SHEET_ID)
+}
+
+const PROJECTS_CACHE_TTL_MS = 24 * 60 * 60 * 1000
+
+function projectCacheKey(kind) {
+  return `gsproj:${SHEET_ID || 'no-sheet'}:${kind}`
+}
+
+function readProjectCache(kind) {
+  try {
+    const raw = sessionStorage.getItem(projectCacheKey(kind))
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (!parsed || !parsed.ts || !parsed.data) return null
+    // Prefer fresh cache; allow stale cache if present to avoid "loading" flash
+    if (Date.now() - parsed.ts > PROJECTS_CACHE_TTL_MS) {
+      return parsed.data
+    }
+    return parsed.data
+  } catch {
+    return null
+  }
+}
+
+function writeProjectCache(kind, data) {
+  try {
+    sessionStorage.setItem(projectCacheKey(kind), JSON.stringify({ ts: Date.now(), data }))
+  } catch {
+    // ignore
+  }
+}
+
+export function getCachedEditsProjects() {
+  if (!SHEET_ID) return null
+  return readProjectCache('edits')
+}
+
+export function getCachedDirectedItems() {
+  if (!SHEET_ID) return null
+  return readProjectCache('directed')
+}
 
 const BASE = SHEET_ID
   ? `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values`
@@ -56,24 +98,24 @@ async function fetchRange(range) {
       const { ts, values } = JSON.parse(cached)
       // TTL 120s to reduce flicker and API hits
       if (Date.now() - ts < 120_000 && Array.isArray(values)) {
-        console.log('⚡ Using cached range:', range, 'rows:', values.length)
+        if (import.meta.env.DEV) console.log('⚡ Using cached range:', range, 'rows:', values.length)
         return values
       }
     }
   } catch {}
 
   const url = `${BASE}/${encodeURIComponent(range)}?key=${API_KEY}`
-  console.log('🌐 Fetching:', url)
+  if (import.meta.env.DEV) console.log('🌐 Fetching:', url)
   const res = await fetch(url)
-  console.log('📡 Response status:', res.status)
+  if (import.meta.env.DEV) console.log('📡 Response status:', res.status)
   if (!res.ok) {
     const errorText = await res.text()
-    console.log('❌ Error response:', errorText)
+    if (import.meta.env.DEV) console.log('❌ Error response:', errorText)
     throw new Error(`Sheets HTTP ${res.status}: ${errorText}`)
   }
   const json = await res.json()
   const values = json.values || []
-  console.log('📊 Data received:', values.length || 0, 'rows')
+  if (import.meta.env.DEV) console.log('📊 Data received:', values.length || 0, 'rows')
   try {
     sessionStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), values }))
   } catch {}
@@ -201,11 +243,13 @@ async function loadProjectsAndVideos(projectsRange, videosRange) {
 }
 
 export async function loadEditsFromSheets() {
-  console.log('🎬 loadEditsFromSheets: Starting...')
-  console.log('🎬 BASE:', BASE)
-  console.log('🎬 API_KEY:', API_KEY ? `Present (${API_KEY.substring(0, 10)}...)` : 'Missing')
-  console.log('🎬 SHEET_ID:', SHEET_ID || 'Missing')
-  console.log('🎬 import.meta.env.PROD:', import.meta.env.PROD)
+  if (import.meta.env.DEV) {
+    console.log('🎬 loadEditsFromSheets: Starting...')
+    console.log('🎬 BASE:', BASE)
+    console.log('🎬 API_KEY:', API_KEY ? `Present (${API_KEY.substring(0, 10)}...)` : 'Missing')
+    console.log('🎬 SHEET_ID:', SHEET_ID || 'Missing')
+    console.log('🎬 import.meta.env.PROD:', import.meta.env.PROD)
+  }
   
   if (!BASE || !API_KEY) {
     console.log('❌ Missing BASE or API_KEY')
@@ -214,24 +258,30 @@ export async function loadEditsFromSheets() {
   
   // Prefer Edits_* sheets; fallback to generic Projects/Videos
   try {
-    console.log('🎬 Trying Edits_Projects and Edits_Videos...')
+    if (import.meta.env.DEV) console.log('🎬 Trying Edits_Projects and Edits_Videos...')
     const result = await loadProjectsAndVideos('Edits_Projects!A:Z', 'Edits_Videos!A:Z')
-    console.log('✅ Edits loaded:', result?.length, 'projects')
-    if (result && result.length > 0) {
-      console.log('📋 First project:', result[0])
+    if (import.meta.env.DEV) {
+      console.log('✅ Edits loaded:', result?.length, 'projects')
+      if (result && result.length > 0) console.log('📋 First project:', result[0])
     }
+    if (result && result.length) writeProjectCache('edits', result)
     return result
   } catch (error) {
-    console.error('❌ Edits sheets failed:', error)
-    console.error('Stack:', error.stack)
+    if (import.meta.env.DEV) {
+      console.error('❌ Edits sheets failed:', error)
+      console.error('Stack:', error.stack)
+    }
     try {
-      console.log('🎬 Trying fallback Projects and Videos...')
+      if (import.meta.env.DEV) console.log('🎬 Trying fallback Projects and Videos...')
       const result = await loadProjectsAndVideos('Projects!A:Z', 'Videos!A:Z')
-      console.log('✅ Fallback loaded:', result?.length, 'projects')
+      if (import.meta.env.DEV) console.log('✅ Fallback loaded:', result?.length, 'projects')
+      if (result && result.length) writeProjectCache('edits', result)
       return result
     } catch (fallbackError) {
-      console.error('❌ Fallback also failed:', fallbackError)
-      console.error('Stack:', fallbackError.stack)
+      if (import.meta.env.DEV) {
+        console.error('❌ Fallback also failed:', fallbackError)
+        console.error('Stack:', fallbackError.stack)
+      }
       return null
     }
   }
@@ -239,7 +289,7 @@ export async function loadEditsFromSheets() {
 
 export function sheetsConfigured() {
   const configured = Boolean(API_KEY && SHEET_ID)
-  console.log('🔧 sheetsConfigured() called:', configured)
+  if (import.meta.env.DEV) console.log('🔧 sheetsConfigured() called:', configured)
   return configured
 }
 
@@ -262,7 +312,9 @@ export async function loadDirectedFromSheets() {
       })
     })
   })
-  return items.sort((a, b) => a.order - b.order || a.title.localeCompare(b.title))
+  const sorted = items.sort((a, b) => a.order - b.order || a.title.localeCompare(b.title))
+  if (sorted && sorted.length) writeProjectCache('directed', sorted)
+  return sorted
 }
 
 export async function loadContactFromSheets() {

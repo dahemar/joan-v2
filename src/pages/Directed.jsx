@@ -1,14 +1,13 @@
 import { useEffect, useState } from 'react'
 import VideoModal from '../components/VideoModal'
-import { directedVideos as fallbackDirected } from '../data/directedFromEdits'
-import { loadDirectedFromSheets, sheetsConfigured } from '../data/loadFromSheets'
+import { getCachedDirectedItems, loadDirectedFromSheets, sheetsConfigured } from '../data/loadFromSheets'
 import { resolveProjectPosterByTitle, resolveProjectVideoByTitle } from '../data/resolveLocalMedia'
 import VideoThumb from '../components/VideoThumb'
 
 export default function Directed() {
   const [active, setActive] = useState(null)
-  const [items, setItems] = useState(null)
-  const [loading, setLoading] = useState(sheetsConfigured())
+  const [items, setItems] = useState(() => (sheetsConfigured() ? (getCachedDirectedItems() || []) : []))
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -24,7 +23,7 @@ export default function Directed() {
   return (
     <div className="center-viewport">
       <div className="grid">
-        {(sheetsConfigured() && items && items.length > 0 ? items : fallbackDirected).map((item) => {
+        {(items || []).map((item) => {
           const poster = item.poster || resolveProjectPosterByTitle(item.title)
           const thumbVideoSrc = item.src || resolveProjectVideoByTitle(item.title)
           return (
