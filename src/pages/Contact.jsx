@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { loadContactFromSheets, sheetsConfigured } from '../data/loadFromSheets'
 
 export default function Contact() {
-  const [contact, setContact] = useState({ email: 'hello@example.com', instagram: '@yourhandle' })
+  const [contact, setContact] = useState({ email: 'joan-cf@hotmail.com', instagram: '@joan47129540' })
 
   useEffect(() => {
     let cancelled = false
