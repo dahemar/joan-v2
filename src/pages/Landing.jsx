@@ -99,6 +99,14 @@ export default function Landing() {
       window.removeEventListener('pageshow', reattempt)
     }
   }, [tryPlay])
+  const base = (import.meta.env.VITE_R2_PUBLIC_BASE || import.meta.env.BASE_URL).replace(/\/$/, '')
+
+  function assetUrl(name) {
+    // when using R2 base we uploaded files under `public/` prefix
+    if (import.meta.env.VITE_R2_PUBLIC_BASE) return `${base}/public/${name}`
+    return `${base}/${name}`
+  }
+
   return (
     <div>
       <div className="topbar center-viewport">
@@ -110,31 +118,31 @@ export default function Landing() {
       <div className="landing-page">
         <div className="landing-content">
           <div className="landing-media">
-            {playFailed ? (
-              <img
-                className="landing-gif"
-                src={(import.meta.env.VITE_R2_PUBLIC_BASE || import.meta.env.BASE_URL) + 'HOMEtest.gif'}
-                alt="Landing animation"
-                loading="eager"
-                fetchpriority="high"
-              />
-            ) : (
-              <video
-                ref={videoRef}
-                className="landing-gif"
-                autoPlay
-                muted
-                defaultMuted
-                loop
-                playsInline
-                poster={(import.meta.env.VITE_R2_PUBLIC_BASE || import.meta.env.BASE_URL) + 'HOMEtest.jpg'}
-                preload="auto"
-              >
-                <source src={(import.meta.env.VITE_R2_PUBLIC_BASE || import.meta.env.BASE_URL) + 'HOMEtest.webm'} type="video/webm" />
-                <source src={(import.meta.env.VITE_R2_PUBLIC_BASE || import.meta.env.BASE_URL) + 'HOMEtest.mp4'} type="video/mp4" />
-                <img src={(import.meta.env.VITE_R2_PUBLIC_BASE || import.meta.env.BASE_URL) + 'HOMEtest.jpg'} alt="Landing animation" />
-              </video>
-            )}
+          {playFailed ? (
+            <img
+              className="landing-gif"
+              src={assetUrl('HOMEtest.gif')}
+              alt="Landing animation"
+              loading="eager"
+              fetchpriority="high"
+            />
+          ) : (
+            <video
+              ref={videoRef}
+              className="landing-gif"
+              autoPlay
+              muted
+              defaultMuted
+              loop
+              playsInline
+              poster={assetUrl('HOMEtest.jpg')}
+              preload="auto"
+            >
+              <source src={assetUrl('HOMEtest.webm')} type="video/webm" />
+              <source src={assetUrl('HOMEtest.mp4')} type="video/mp4" />
+              <img src={assetUrl('HOMEtest.jpg')} alt="Landing animation" />
+            </video>
+          )}
           </div>
         </div>
       </div>
