@@ -8,11 +8,11 @@ import { EDIT_CATEGORIES } from '../data/categories'
 import { useSearchParams } from 'react-router-dom'
 
 export default function Edits() {
-  console.log('🎨 Edits component rendered')
+  if (import.meta.env.DEV) console.log('🎨 Edits component rendered')
   const [active, setActive] = useState(null)
   const [sheetProjects, setSheetProjects] = useState(null)
   const sheetsConfig = sheetsConfigured()
-  console.log('🎨 sheetsConfigured:', sheetsConfig)
+  if (import.meta.env.DEV) console.log('🎨 sheetsConfigured:', sheetsConfig)
   const [loading, setLoading] = useState(sheetsConfig)
   const [params, setParams] = useSearchParams()
   const filter = params.get('f') || 'all'
@@ -31,10 +31,10 @@ export default function Edits() {
   useEffect(() => {
     let cancelled = false
     if (sheetsConfigured()) {
-      console.log('🔄 Edits: Starting Google Sheets fetch...')
+      if (import.meta.env.DEV) console.log('🔄 Edits: Starting Google Sheets fetch...')
       loadEditsFromSheets()
         .then((projects) => { 
-          console.log('📦 Edits: Sheets response:', projects?.length || 0, 'projects')
+          if (import.meta.env.DEV) console.log('📦 Edits: Sheets response:', projects?.length || 0, 'projects')
           if (!cancelled) setSheetProjects(projects || []) 
         })
         .catch((error) => {
@@ -42,7 +42,7 @@ export default function Edits() {
         })
         .finally(() => { 
           if (!cancelled) {
-            console.log('✅ Edits: Sheets loading finished')
+            if (import.meta.env.DEV) console.log('✅ Edits: Sheets loading finished')
             setLoading(false) 
           }
         })
@@ -50,36 +50,11 @@ export default function Edits() {
     return () => { cancelled = true }
   }, [])
 
-  if (sheetsConfigured() && loading) {
-    return (
-      <div className="center-viewport" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
-        <div style={{ textAlign: 'center', opacity: 0.6 }}>
-          <div style={{ 
-            width: '40px', 
-            height: '40px', 
-            border: '3px solid #f3f3f3',
-            borderTop: '3px solid #333',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-            margin: '0 auto 16px'
-          }} />
-          <style>{`
-            @keyframes spin {
-              0% { transform: rotate(0deg); }
-              100% { transform: rotate(360deg); }
-            }
-          `}</style>
-          <p style={{ fontSize: '14px', margin: 0 }}>Loading...</p>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className="center-viewport">
       <div className="grid">
         {projects.map((project) => {
-          console.log('🎬 Rendering project:', project.id, project.title, 'items:', project.items?.length)
+          if (import.meta.env.DEV) console.log('🎬 Rendering project:', project.id, project.title, 'items:', project.items?.length)
           const cat = project.category || EDIT_CATEGORIES[project.title] || 'music'
           const dim = (filter === 'commercial' && cat !== 'commercial') || (filter === 'music' && cat !== 'music')
           return (
