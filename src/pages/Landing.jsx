@@ -1,11 +1,13 @@
 import { NavLink } from 'react-router-dom'
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback, useState } from 'react'
 import { sheetsConfigured } from '../data/loadFromSheets'
 import { preloadThumbnailsInBackground } from '../utils/preloadThumbnails'
 
 export default function Landing() {
   const videoRef = useRef(null)
   const playTimeoutRef = useRef(null)
+  const [playFailed, setPlayFailed] = useState(false)
+  const playAttemptsRef = useRef(0)
 
   const tryPlay = useCallback(() => {
     const el = videoRef.current
@@ -55,6 +57,24 @@ export default function Landing() {
     }
   }, [tryPlay])
 
+  // monitor attempts and mark failure after several tries
+  useEffect(() => {
+    const checker = setInterval(() => {
+      const el = videoRef.current
+      if (!el) return
+      if (!el.paused && !el.ended) {
+        // playing
+        playAttemptsRef.current = 0
+        return
+      }
+      playAttemptsRef.current += 1
+      if (playAttemptsRef.current > 6) {
+        setPlayFailed(true)
+      }
+    }, 1000)
+    return () => clearInterval(checker)
+  }, [])
+
   useEffect(() => {
     const reattempt = () => {
       tryPlay()
@@ -90,21 +110,31 @@ export default function Landing() {
       <div className="landing-page">
         <div className="landing-content">
           <div className="landing-media">
-            <video
-              ref={videoRef}
-              className="landing-gif"
-              autoPlay
-              muted
-              defaultMuted
-              loop
-              playsInline
-              poster={import.meta.env.BASE_URL + 'HOMEtest.jpg'}
-              preload="auto"
-            >
-              <source src={import.meta.env.BASE_URL + 'HOMEtest.webm'} type="video/webm" />
-              <source src={import.meta.env.BASE_URL + 'HOMEtest.mp4'} type="video/mp4" />
-              <img src={import.meta.env.BASE_URL + 'HOMEtest.jpg'} alt="Landing animation" />
-            </video>
+            {playFailed ? (
+              <img
+                className="landing-gif"
+                src={(import.meta.env.VITE_R2_PUBLIC_BASE || import.meta.env.BASE_URL) + 'HOMEtest.gif'}
+                alt="Landing animation"
+                loading="eager"
+                fetchpriority="high"
+              />
+            ) : (
+              <video
+                ref={videoRef}
+                className="landing-gif"
+                autoPlay
+                muted
+                defaultMuted
+                loop
+                playsInline
+                poster={(import.meta.env.VITE_R2_PUBLIC_BASE || import.meta.env.BASE_URL) + 'HOMEtest.jpg'}
+                preload="auto"
+              >
+                <source src={(import.meta.env.VITE_R2_PUBLIC_BASE || import.meta.env.BASE_URL) + 'HOMEtest.webm'} type="video/webm" />
+                <source src={(import.meta.env.VITE_R2_PUBLIC_BASE || import.meta.env.BASE_URL) + 'HOMEtest.mp4'} type="video/mp4" />
+                <img src={(import.meta.env.VITE_R2_PUBLIC_BASE || import.meta.env.BASE_URL) + 'HOMEtest.jpg'} alt="Landing animation" />
+              </video>
+            )}
           </div>
         </div>
       </div>
